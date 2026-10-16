@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import dcrustm.ecell.mobile.ui.attendance.AttendanceScreen
 import dcrustm.ecell.mobile.ui.attendance.HostMeetingScreen
 import dcrustm.ecell.mobile.ui.hub.HubScreen
+import dcrustm.ecell.mobile.ui.leaderboard.LeaderboardScreen
 import dcrustm.ecell.mobile.ui.polls.CreatePollScreen
 import dcrustm.ecell.mobile.ui.polls.PollsScreen
 import dcrustm.ecell.mobile.ui.resources.AddResourceScreen
@@ -25,9 +26,9 @@ object HubRoutes {
     const val CREATE_TASK = "tasks/create"
     const val ATTENDANCE = "attendance"
     const val HOST_MEETING = "attendance/meeting/{meetingId}"
-
     const val RESOURCES = "resources"
     const val ADD_RESOURCE = "resources/add"
+    const val LEADERBOARD = "leaderboard"
 
     fun hostMeeting(meetingId: String) = "attendance/meeting/$meetingId"
 }
@@ -36,7 +37,10 @@ object HubRoutes {
  * Everything reachable from the Hub tab lives in one nested graph, so the Hub tab stays
  * highlighted (and keeps its back stack) while the member is inside any of its features.
  */
-fun NavGraphBuilder.hubGraph(navController: NavHostController) {
+fun NavGraphBuilder.hubGraph(
+    navController: NavHostController,
+    onMemberClick: (String) -> Unit
+) {
     navigation(startDestination = HubRoutes.HOME, route = Screen.Hub.route) {
         composable(HubRoutes.HOME) {
             HubScreen(onOpen = { route -> navController.navigate(route) })
@@ -79,6 +83,12 @@ fun NavGraphBuilder.hubGraph(navController: NavHostController) {
         }
         composable(HubRoutes.ADD_RESOURCE) {
             AddResourceScreen(onBack = { navController.popBackStack() })
+        }
+        composable(HubRoutes.LEADERBOARD) {
+            LeaderboardScreen(
+                onBack = { navController.popBackStack() },
+                onMemberClick = onMemberClick
+            )
         }
     }
 }

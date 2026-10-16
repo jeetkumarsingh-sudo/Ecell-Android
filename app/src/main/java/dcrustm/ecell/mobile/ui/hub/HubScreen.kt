@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.EventAvailable
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.HowToVote
@@ -57,7 +58,8 @@ private val hubFeatures = listOf(
     HubFeature(HubRoutes.POLLS, "Polls", "Vote on team decisions", Icons.Outlined.HowToVote),
     HubFeature(HubRoutes.TASKS, "Tasks", "Your committee's to-do board", Icons.Outlined.TaskAlt),
     HubFeature(HubRoutes.ATTENDANCE, "Attendance", "Check in to meetings", Icons.Outlined.EventAvailable),
-    HubFeature(HubRoutes.RESOURCES, "Resources", "Docs, decks and links", Icons.Outlined.FolderOpen)
+    HubFeature(HubRoutes.RESOURCES, "Resources", "Docs, decks and links", Icons.Outlined.FolderOpen),
+    HubFeature(HubRoutes.LEADERBOARD, "Leaderboard", "Points, ranks and badges", Icons.Outlined.EmojiEvents)
 )
 
 private data class HubAction(val label: String, val route: String, val icon: ImageVector)

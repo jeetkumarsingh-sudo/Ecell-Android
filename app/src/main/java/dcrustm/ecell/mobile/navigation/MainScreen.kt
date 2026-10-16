@@ -159,7 +159,10 @@ fun MainScreen(
             composable(ROUTE_POST_ANNOUNCEMENT) {
                 PostAnnouncementScreen(onBack = { navController.popBackStack() })
             }
-            hubGraph(navController)
+            hubGraph(
+                navController = navController,
+                onMemberClick = { uid -> rootNavController.navigate(RootScreen.MemberDetail.createRoute(uid)) }
+            )
         }
     }
 }
