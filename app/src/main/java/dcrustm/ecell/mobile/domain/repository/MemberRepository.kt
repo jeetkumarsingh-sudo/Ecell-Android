@@ -2,6 +2,7 @@ package dcrustm.ecell.mobile.domain.repository
 
 import dcrustm.ecell.mobile.domain.model.Committee
 import dcrustm.ecell.mobile.domain.model.Member
+import dcrustm.ecell.mobile.domain.model.ProfileUpdate
 import dcrustm.ecell.mobile.domain.model.ROLE
 import kotlinx.coroutines.flow.Flow
 
@@ -19,5 +20,5 @@ interface MemberRepository {
 
     suspend fun rejectMember(uid: String)
 
-    suspend fun updateOwnProfile(uid: String, phone: String, bio: String)
+    suspend fun updateOwnProfile(uid: String, update: ProfileUpdate)
 }

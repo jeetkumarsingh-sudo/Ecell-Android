@@ -18,7 +18,9 @@ import javax.inject.Inject
 data class DirectoryFilter(
     val query: String = "",
     val committee: Committee? = null,
-    val year: Int? = null
+    val year: Int? = null,
+    /** Only committee heads and the coordinator. */
+    val leadsOnly: Boolean = false
 )
 
 @HiltViewModel
@@ -36,13 +38,17 @@ class DirectoryViewModel @Inject constructor(
 
     val filteredMembers: StateFlow<List<Member>> = combine(allMembers, _filter) { members, filter ->
         members.filter { member ->
-            val matchesQuery = filter.query.isBlank() ||
-                member.name.contains(filter.query, ignoreCase = true) ||
-                member.branch.contains(filter.query, ignoreCase = true) ||
-                member.email.contains(filter.query, ignoreCase = true)
+            val query = filter.query.trim()
+            val matchesQuery = query.isBlank() ||
+                member.name.contains(query, ignoreCase = true) ||
+                member.branch.contains(query, ignoreCase = true) ||
+                member.email.contains(query, ignoreCase = true) ||
+                member.skills.any { it.contains(query, ignoreCase = true) }
             val matchesCommittee = filter.committee == null || member.committee == filter.committee
             val matchesYear = filter.year == null || member.year == filter.year
-            matchesQuery && matchesCommittee && matchesYear
+            val matchesRole = !filter.leadsOnly ||
+                member.role == ROLE.COMMITTEE_HEAD || member.role == ROLE.COORDINATOR
+            matchesQuery && matchesCommittee && matchesYear && matchesRole
         }.sortedWith(
             compareBy<Member> { it.committee.ordinal }
                 .thenByDescending { it.role.ordinal == 0 }
@@ -50,8 +56,8 @@ class DirectoryViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun search(query: String, committee: Committee?, year: Int?) {
-        _filter.value = DirectoryFilter(query, committee, year)
+    fun search(query: String, committee: Committee?, year: Int?, leadsOnly: Boolean = false) {
+        _filter.value = DirectoryFilter(query, committee, year, leadsOnly)
     }
 
     fun canSeeContact(viewer: Member?, target: Member): Boolean {

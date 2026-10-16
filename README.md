@@ -34,7 +34,7 @@ copy from the Firebase console for project `ecell-dcrust`.
 
 ### Firestore data model
 
-- `users/{uid}` — name, email, phone, year, branch, committee, role, bio, profilePhotoUrl, joinedAt, isApproved
+- `users/{uid}` — name, email, phone, year, branch, committee, role, bio, profilePhotoUrl, joinedAt, isApproved, skills, linkedinUrl, githubUrl, portfolioUrl
 - `announcements/{id}` — title, body, authorUid, authorName, committee (`null` = org-wide), createdAt, isPinned, attachmentUrl
 - `complaints/{id}` — title, body, filerUid, filerName, filerCommittee, status, response, createdAt
 - `polls/{id}` — question, options (2–6), createdByUid, createdByName, committee (`null` = org-wide), createdAt, closesAt (`0` = no deadline), isClosed
