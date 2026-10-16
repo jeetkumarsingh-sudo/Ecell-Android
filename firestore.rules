@@ -254,5 +254,26 @@ service cloud.firestore {
       allow delete: if isCoordinator()
                     || (isSignedIn() && meetingData(resource.data.meetingId).hostUid == myUid());
     }
+
+    // ---------------------------------------------------------------- Resources
+
+    // resources/{id} — any approved member shares org-wide or with their own committee;
+    // the coordinator with any committee. Removal: whoever added it, the head of that
+    // committee, or the coordinator.
+    match /resources/{resourceId} {
+      allow read: if isApprovedUser();
+
+      allow create: if isApprovedUser()
+                    && request.resource.data.addedByUid == myUid()
+                    && request.resource.data.url is string
+                    && request.resource.data.url.matches('https?://.+')
+                    && (request.resource.data.committee == null
+                        || request.resource.data.committee == myCommittee()
+                        || isCoordinator());
+
+      allow delete: if isCoordinator()
+                    || (isSignedIn() && resource.data.addedByUid == myUid())
+                    || (isHead() && resource.data.committee == myCommittee());
+    }
   }
 }

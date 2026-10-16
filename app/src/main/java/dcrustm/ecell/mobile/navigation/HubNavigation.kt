@@ -11,6 +11,8 @@ import dcrustm.ecell.mobile.ui.attendance.HostMeetingScreen
 import dcrustm.ecell.mobile.ui.hub.HubScreen
 import dcrustm.ecell.mobile.ui.polls.CreatePollScreen
 import dcrustm.ecell.mobile.ui.polls.PollsScreen
+import dcrustm.ecell.mobile.ui.resources.AddResourceScreen
+import dcrustm.ecell.mobile.ui.resources.ResourcesScreen
 import dcrustm.ecell.mobile.ui.tasks.CreateTaskScreen
 import dcrustm.ecell.mobile.ui.tasks.TasksScreen
 
@@ -23,6 +25,9 @@ object HubRoutes {
     const val CREATE_TASK = "tasks/create"
     const val ATTENDANCE = "attendance"
     const val HOST_MEETING = "attendance/meeting/{meetingId}"
+
+    const val RESOURCES = "resources"
+    const val ADD_RESOURCE = "resources/add"
 
     fun hostMeeting(meetingId: String) = "attendance/meeting/$meetingId"
 }
@@ -65,6 +70,15 @@ fun NavGraphBuilder.hubGraph(navController: NavHostController) {
             arguments = listOf(navArgument("meetingId") { type = NavType.StringType })
         ) {
             HostMeetingScreen(onBack = { navController.popBackStack() })
+        }
+        composable(HubRoutes.RESOURCES) {
+            ResourcesScreen(
+                onBack = { navController.popBackStack() },
+                onAddResource = { navController.navigate(HubRoutes.ADD_RESOURCE) }
+            )
+        }
+        composable(HubRoutes.ADD_RESOURCE) {
+            AddResourceScreen(onBack = { navController.popBackStack() })
         }
     }
 }

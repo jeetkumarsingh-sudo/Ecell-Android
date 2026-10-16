@@ -7,6 +7,8 @@ import dcrustm.ecell.mobile.domain.model.CommitteeTask
 import dcrustm.ecell.mobile.domain.model.Meeting
 import dcrustm.ecell.mobile.domain.model.Poll
 import dcrustm.ecell.mobile.domain.model.PollVote
+import dcrustm.ecell.mobile.domain.model.ResourceType
+import dcrustm.ecell.mobile.domain.model.SharedResource
 import dcrustm.ecell.mobile.domain.model.TaskPriority
 import dcrustm.ecell.mobile.domain.model.TaskStatus
 
@@ -148,5 +150,33 @@ fun DocumentSnapshot.toAttendanceRecord(): AttendanceRecord? {
         committee = enumOrDefault(getString("committee"), Committee.NONE),
         checkedInAt = getLong("checkedInAt") ?: 0L,
         markedByHost = getBoolean("markedByHost") ?: false
+    )
+}
+
+// ---- Resources ----
+
+fun SharedResource.toFirestoreMap(): Map<String, Any?> = mapOf(
+    "title" to title,
+    "description" to description,
+    "url" to url,
+    "type" to type.name,
+    "committee" to committee?.name,
+    "addedByUid" to addedByUid,
+    "addedByName" to addedByName,
+    "createdAt" to createdAt
+)
+
+fun DocumentSnapshot.toSharedResource(): SharedResource? {
+    if (!exists()) return null
+    return SharedResource(
+        id = id,
+        title = getString("title") ?: "",
+        description = getString("description") ?: "",
+        url = getString("url") ?: "",
+        type = enumOrDefault(getString("type"), ResourceType.LINK),
+        committee = optionalCommittee("committee"),
+        addedByUid = getString("addedByUid") ?: "",
+        addedByName = getString("addedByName") ?: "",
+        createdAt = getLong("createdAt") ?: 0L
     )
 }

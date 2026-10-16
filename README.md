@@ -44,6 +44,7 @@ copy from the Firebase console for project `ecell-dcrust`.
 - `meetingCodes/{meetingId}` — code, hostUid (readable only by the host and the coordinator)
 - `attendance/{meetingId}_{uid}` — meetingId, uid, name, committee, checkedInAt, markedByHost
 - `checkins/{meetingId}_{uid}` — meetingId, uid, code, at (write-only proof the rules compare with `meetingCodes`, so the code never sits in a document members can read)
+- `resources/{id}` — title, description, url, type (`DOC`/`SLIDES`/`SHEET`/`PDF`/`VIDEO`/`DESIGN`/`LINK`), committee (`null` = everyone), addedByUid, addedByName, createdAt
 
 ### Known trade-off
 

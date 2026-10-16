@@ -6,9 +6,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dcrustm.ecell.mobile.data.repository.FirestoreAttendanceRepository
 import dcrustm.ecell.mobile.data.repository.FirestorePollRepository
+import dcrustm.ecell.mobile.data.repository.FirestoreResourceRepository
 import dcrustm.ecell.mobile.data.repository.FirestoreTaskRepository
 import dcrustm.ecell.mobile.domain.repository.AttendanceRepository
 import dcrustm.ecell.mobile.domain.repository.PollRepository
+import dcrustm.ecell.mobile.domain.repository.ResourceRepository
 import dcrustm.ecell.mobile.domain.repository.TaskRepository
 import javax.inject.Singleton
 
@@ -28,5 +30,9 @@ abstract class FeatureRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAttendanceRepository(impl: FirestoreAttendanceRepository): AttendanceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindResourceRepository(impl: FirestoreResourceRepository): ResourceRepository
 
 }
