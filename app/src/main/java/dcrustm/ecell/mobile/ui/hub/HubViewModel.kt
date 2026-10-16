@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dcrustm.ecell.mobile.domain.model.Member
 import dcrustm.ecell.mobile.domain.model.TaskStatus
+import dcrustm.ecell.mobile.domain.repository.AttendanceRepository
 import dcrustm.ecell.mobile.domain.repository.PollRepository
 import dcrustm.ecell.mobile.domain.repository.TaskRepository
 import dcrustm.ecell.mobile.session.UserSessionManager
@@ -25,7 +26,9 @@ import javax.inject.Inject
 data class HubSummary(
     val pollsAwaitingVote: Int = 0,
     val myOpenTasks: Int = 0,
-    val overdueTasks: Int = 0
+    val overdueTasks: Int = 0,
+    /** Titles of live meetings meant for me that I haven't checked in to yet. */
+    val liveMeetingsToJoin: List<String> = emptyList()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -33,7 +36,8 @@ data class HubSummary(
 class HubViewModel @Inject constructor(
     sessionManager: UserSessionManager,
     private val pollRepository: PollRepository,
-    private val taskRepository: TaskRepository
+    private val taskRepository: TaskRepository,
+    private val attendanceRepository: AttendanceRepository
 ) : ViewModel() {
 
     val currentUser: StateFlow<Member?> = sessionManager.currentUser
@@ -68,7 +72,35 @@ class HubViewModel @Inject constructor(
             }
         }
 
-    val summary: StateFlow<HubSummary> = combine(pollsAwaitingVote, myTaskCounts) { polls, (openTasks, overdue) ->
-        HubSummary(pollsAwaitingVote = polls, myOpenTasks = openTasks, overdueTasks = overdue)
+    private val liveMeetingsToJoin: Flow<List<String>> = sessionManager.currentUser
+        .distinctUntilChanged { old, new -> old?.uid == new?.uid && old?.committee == new?.committee && old?.role == new?.role }
+        .flatMapLatest { user ->
+            if (user == null) {
+                flowOf(emptyList<String>())
+            } else {
+                combine(
+                    attendanceRepository.observeMeetings(),
+                    attendanceRepository.observeAttendanceOf(user.uid)
+                ) { meetings, mine ->
+                    val attended = mine.map { it.meetingId }.toSet()
+                    meetings
+                        .filter { it.isLive && it.checkInOpen && it.id !in attended && it.hostUid != user.uid }
+                        .filter { it.committee == null || it.committee == user.committee }
+                        .map { it.title }
+                }
+            }
+        }
+
+    val summary: StateFlow<HubSummary> = combine(
+        pollsAwaitingVote,
+        myTaskCounts,
+        liveMeetingsToJoin
+    ) { polls, (openTasks, overdue), live ->
+        HubSummary(
+            pollsAwaitingVote = polls,
+            myOpenTasks = openTasks,
+            overdueTasks = overdue,
+            liveMeetingsToJoin = live
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HubSummary())
 }

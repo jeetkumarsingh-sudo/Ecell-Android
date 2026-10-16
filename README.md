@@ -40,6 +40,10 @@ copy from the Firebase console for project `ecell-dcrust`.
 - `polls/{id}` — question, options (2–6), createdByUid, createdByName, committee (`null` = org-wide), createdAt, closesAt (`0` = no deadline), isClosed
 - `pollVotes/{pollId}_{uid}` — pollId, voterUid, optionIndex, votedAt (the id pins one vote per member per poll)
 - `tasks/{id}` — title, description, committee (the assignee's), assigneeUid, assigneeName, assignedByUid, assignedByName, status (`TODO`/`IN_PROGRESS`/`DONE`), priority, dueAt (`0` = none), createdAt, completedAt
+- `meetings/{id}` — title, committee (`null` = org-wide), hostUid, hostName, startedAt, endedAt (`0` = live), checkInOpen
+- `meetingCodes/{meetingId}` — code, hostUid (readable only by the host and the coordinator)
+- `attendance/{meetingId}_{uid}` — meetingId, uid, name, committee, checkedInAt, markedByHost
+- `checkins/{meetingId}_{uid}` — meetingId, uid, code, at (write-only proof the rules compare with `meetingCodes`, so the code never sits in a document members can read)
 
 ### Known trade-off
 

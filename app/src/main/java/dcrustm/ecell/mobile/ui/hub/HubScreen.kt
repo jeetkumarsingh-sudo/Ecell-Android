@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.EventAvailable
 import androidx.compose.material.icons.outlined.HowToVote
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Badge
@@ -53,7 +54,8 @@ private data class HubFeature(
 
 private val hubFeatures = listOf(
     HubFeature(HubRoutes.POLLS, "Polls", "Vote on team decisions", Icons.Outlined.HowToVote),
-    HubFeature(HubRoutes.TASKS, "Tasks", "Your committee's to-do board", Icons.Outlined.TaskAlt)
+    HubFeature(HubRoutes.TASKS, "Tasks", "Your committee's to-do board", Icons.Outlined.TaskAlt),
+    HubFeature(HubRoutes.ATTENDANCE, "Attendance", "Check in to meetings", Icons.Outlined.EventAvailable)
 )
 
 private data class HubAction(val label: String, val route: String, val icon: ImageVector)
@@ -61,10 +63,14 @@ private data class HubAction(val label: String, val route: String, val icon: Ima
 private fun HubSummary.badgeFor(route: String): Int = when (route) {
     HubRoutes.POLLS -> pollsAwaitingVote
     HubRoutes.TASKS -> myOpenTasks
+    HubRoutes.ATTENDANCE -> liveMeetingsToJoin.size
     else -> 0
 }
 
 private fun HubSummary.actions(): List<HubAction> = buildList {
+    liveMeetingsToJoin.forEach { title ->
+        add(HubAction("$title is live — check in", HubRoutes.ATTENDANCE, Icons.Outlined.EventAvailable))
+    }
     if (overdueTasks > 0) {
         add(
             HubAction(

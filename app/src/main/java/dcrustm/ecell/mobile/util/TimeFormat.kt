@@ -41,6 +41,9 @@ fun formatDate(millis: Long): String =
 fun formatDateTime(millis: Long): String =
     SimpleDateFormat("d MMM, h:mm a", Locale.getDefault()).format(Date(millis))
 
+fun formatClockTime(millis: Long): String =
+    SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(millis))
+
 /** Due-date label relative to today: "Due today", "Due tomorrow", "Due in 3d", "Overdue by 2d". */
 fun formatDueLabel(dueAt: Long, now: Long = System.currentTimeMillis()): String {
     val today = startOfDay(now)

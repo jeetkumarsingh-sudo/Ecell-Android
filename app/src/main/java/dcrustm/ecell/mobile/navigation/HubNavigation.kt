@@ -2,8 +2,12 @@ package dcrustm.ecell.mobile.navigation
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import androidx.navigation.navArgument
+import dcrustm.ecell.mobile.ui.attendance.AttendanceScreen
+import dcrustm.ecell.mobile.ui.attendance.HostMeetingScreen
 import dcrustm.ecell.mobile.ui.hub.HubScreen
 import dcrustm.ecell.mobile.ui.polls.CreatePollScreen
 import dcrustm.ecell.mobile.ui.polls.PollsScreen
@@ -17,6 +21,10 @@ object HubRoutes {
     const val CREATE_POLL = "polls/create"
     const val TASKS = "tasks"
     const val CREATE_TASK = "tasks/create"
+    const val ATTENDANCE = "attendance"
+    const val HOST_MEETING = "attendance/meeting/{meetingId}"
+
+    fun hostMeeting(meetingId: String) = "attendance/meeting/$meetingId"
 }
 
 /**
@@ -45,6 +53,18 @@ fun NavGraphBuilder.hubGraph(navController: NavHostController) {
         }
         composable(HubRoutes.CREATE_TASK) {
             CreateTaskScreen(onBack = { navController.popBackStack() })
+        }
+        composable(HubRoutes.ATTENDANCE) {
+            AttendanceScreen(
+                onBack = { navController.popBackStack() },
+                onOpenHostView = { id -> navController.navigate(HubRoutes.hostMeeting(id)) }
+            )
+        }
+        composable(
+            route = HubRoutes.HOST_MEETING,
+            arguments = listOf(navArgument("meetingId") { type = NavType.StringType })
+        ) {
+            HostMeetingScreen(onBack = { navController.popBackStack() })
         }
     }
 }

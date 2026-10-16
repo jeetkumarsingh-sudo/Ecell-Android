@@ -1,8 +1,10 @@
 package dcrustm.ecell.mobile.data.firebase
 
 import com.google.firebase.firestore.DocumentSnapshot
+import dcrustm.ecell.mobile.domain.model.AttendanceRecord
 import dcrustm.ecell.mobile.domain.model.Committee
 import dcrustm.ecell.mobile.domain.model.CommitteeTask
+import dcrustm.ecell.mobile.domain.model.Meeting
 import dcrustm.ecell.mobile.domain.model.Poll
 import dcrustm.ecell.mobile.domain.model.PollVote
 import dcrustm.ecell.mobile.domain.model.TaskPriority
@@ -99,5 +101,52 @@ fun DocumentSnapshot.toCommitteeTask(): CommitteeTask? {
         dueAt = getLong("dueAt") ?: 0L,
         createdAt = getLong("createdAt") ?: 0L,
         completedAt = getLong("completedAt") ?: 0L
+    )
+}
+
+// ---- Meetings & attendance ----
+
+fun Meeting.toFirestoreMap(): Map<String, Any?> = mapOf(
+    "title" to title,
+    "committee" to committee?.name,
+    "hostUid" to hostUid,
+    "hostName" to hostName,
+    "startedAt" to startedAt,
+    "endedAt" to endedAt,
+    "checkInOpen" to checkInOpen
+)
+
+fun DocumentSnapshot.toMeeting(): Meeting? {
+    if (!exists()) return null
+    return Meeting(
+        id = id,
+        title = getString("title") ?: "",
+        committee = optionalCommittee("committee"),
+        hostUid = getString("hostUid") ?: "",
+        hostName = getString("hostName") ?: "",
+        startedAt = getLong("startedAt") ?: 0L,
+        endedAt = getLong("endedAt") ?: 0L,
+        checkInOpen = getBoolean("checkInOpen") ?: false
+    )
+}
+
+fun AttendanceRecord.toFirestoreMap(): Map<String, Any?> = mapOf(
+    "meetingId" to meetingId,
+    "uid" to uid,
+    "name" to name,
+    "committee" to committee.name,
+    "checkedInAt" to checkedInAt,
+    "markedByHost" to markedByHost
+)
+
+fun DocumentSnapshot.toAttendanceRecord(): AttendanceRecord? {
+    if (!exists()) return null
+    return AttendanceRecord(
+        meetingId = getString("meetingId") ?: "",
+        uid = getString("uid") ?: "",
+        name = getString("name") ?: "",
+        committee = enumOrDefault(getString("committee"), Committee.NONE),
+        checkedInAt = getLong("checkedInAt") ?: 0L,
+        markedByHost = getBoolean("markedByHost") ?: false
     )
 }
