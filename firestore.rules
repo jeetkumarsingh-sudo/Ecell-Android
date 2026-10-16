@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userExists(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function userData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
+    }
+
+    function myUid() {
+      return request.auth.uid;
+    }
+
+    function isApprovedUser() {
+      return isSignedIn() && userExists(myUid()) && userData(myUid()).isApproved == true;
+    }
+
+    function myRole() {
+      return isSignedIn() && userExists(myUid()) ? userData(myUid()).role : null;
+    }
+
+    function isCoordinator() {
+      return myRole() == 'COORDINATOR';
+    }
+
+    function isHead() {
+      return myRole() == 'COMMITTEE_HEAD';
+    }
+
+    // users/{uid} — member profile.
+    // NOTE: this is a single document per member, readable by any approved member.
+    // Phone/email are therefore visible to the whole approved membership (not just
+    // the privacy tiers the app UI applies for its own contact-display logic) —
+    // Firestore rules can't mask individual fields without splitting into a second
+    // document/subcollection. Flagged for anyone revisiting this: split into
+    // users/{uid} (public) + users/{uid}/private/contact if stricter contact-info
+    // privacy is required later.
+    match /users/{userId} {
+      allow read: if isSignedIn() && (myUid() == userId || isApprovedUser());
+
+      // First-time self-registration must use safe, unprivileged defaults.
+      allow create: if isSignedIn()
+                    && myUid() == userId
+                    && request.resource.data.role == 'PENDING'
+                    && request.resource.data.isApproved == false;
+
+      // Coordinator can edit any profile (approvals, role/committee changes).
+      // A member can edit their own profile but not elevate themselves.
+      allow update: if isCoordinator()
+                    || (isSignedIn() && myUid() == userId
+                        && request.resource.data.role == resource.data.role
+                        && request.resource.data.isApproved == resource.data.isApproved
+                        && request.resource.data.committee == resource.data.committee);
+
+      allow delete: if isCoordinator();
+    }
+
+    // announcements/{id}
+    match /announcements/{id} {
+      allow read: if isApprovedUser();
+
+      allow create: if (isCoordinator() || isHead())
+                    && request.resource.data.authorUid == myUid();
+
+      allow update, delete: if isCoordinator()
+                    || (isHead() && resource.data.authorUid == myUid());
+    }
+
+    // complaints/{id} — identity is only exposed to the coordinator and to the
+    // member who filed it; nobody else can list or read other members' complaints.
+    match /complaints/{id} {
+      allow create: if isApprovedUser() && request.resource.data.filerUid == myUid();
+
+      allow read: if isCoordinator()
+                    || (isSignedIn() && resource.data.filerUid == myUid());
+
+      // Only the coordinator reviews/responds to complaints.
+      allow update: if isCoordinator();
+
+      allow delete: if isCoordinator();
+    }
+  }
+}

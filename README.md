@@ -3,6 +3,53 @@ The official Ecell android app for everything related E-Cell @DCRUSTM
 
 ---
 
+## Firebase Setup (required before the app will run)
+
+The app uses Firebase Auth (Google Sign-In) + Firestore as its backend.
+`app/google-services.json` is gitignored — each developer needs their own
+copy from the Firebase console for project `ecell-dcrust`.
+
+### One-time Firebase Console steps
+
+1. **Add your SHA-1 fingerprint** (Google Sign-In won't work without this)
+   - Get it: `./gradlew signingReport` → copy the `SHA1` value under the `debug` variant
+   - Firebase Console → Project Settings → your Android app → **Add fingerprint** → paste it
+   - Firebase then generates an Android-type OAuth client automatically
+   - Re-download `google-services.json` afterwards and replace `app/google-services.json`
+
+2. **Publish the Firestore security rules**
+   - Firebase Console → Firestore Database → **Rules** tab
+   - Paste the contents of [`firestore.rules`](firestore.rules) (repo root) → **Publish**
+   - (Or via CLI: `firebase deploy --only firestore:rules`)
+
+3. **Bootstrap the first coordinator account**
+   - Build and run the app, sign in once with Google (your own account)
+   - This creates a `users/{your-uid}` Firestore document with `role: PENDING`,
+     `isApproved: false` — nobody can self-promote to coordinator, by design
+   - Firebase Console → Firestore Database → **Data** → `users` collection →
+     find your document (matched by name/email) → manually set `role` to
+     `"COORDINATOR"` and `isApproved` to `true`
+   - From then on, every further approval happens in-app: the coordinator
+     approves pending members and assigns them to a committee
+
+### Firestore data model
+
+- `users/{uid}` — name, email, phone, year, branch, committee, role, bio, profilePhotoUrl, joinedAt, isApproved
+- `announcements/{id}` — title, body, authorUid, authorName, committee (`null` = org-wide), createdAt, isPinned, attachmentUrl
+- `complaints/{id}` — title, body, filerUid, filerName, filerCommittee, status, response, createdAt
+
+### Known trade-off
+
+`firestore.rules` restricts reads mostly at the document level, not per field:
+any *approved* member can read another approved member's full profile
+document (including phone number), not just the subset the in-app directory
+UI shows them. Splitting `users/{uid}` into a public profile doc plus a
+`users/{uid}/private/contact` subcollection would let rules restrict
+phone/email more tightly (self, coordinator, or committee head of the same
+committee only) if that's needed later.
+
+---
+
 ## Features
 
 ### Market News Dashboard

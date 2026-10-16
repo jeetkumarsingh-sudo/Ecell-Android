@@ -65,36 +65,15 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    // Function to signup with email all in one and return the access token.
+    // Email/password sign-in is not enabled on the Firebase project (Google-only for now).
     fun signUpWithEmail(user: User) = viewModelScope.launch {
-        _authState.value = AuthState.Loading
-        val result = emailSignUpUseCase(user)
-        when(result) {
-            is AuthSuccess -> {
-                _authState.value = AuthState.Authenticated(result)
-                _isLoginSuccessful.value = true
-            }
-            is AuthError -> {
-                _authState.value = AuthState.Error(result.errorMessage)
-                _isLoginSuccessful.value = false
-            }
-        }
+        _authState.value = AuthState.Error("Email sign-up isn't available yet — please continue with Google.")
+        _isLoginSuccessful.value = false
     }
 
-    // Function to login with Email Id all in one and return the access token.
     fun loginWithEmail(email: String, password: String) = viewModelScope.launch {
-        _authState.value = AuthState.Loading
-        val result = emailLoginUseCase(email, password)
-        when(result) {
-            is AuthSuccess -> {
-                _authState.value = AuthState.Authenticated(result)
-                _isLoginSuccessful.value = true
-            }
-            is AuthError -> {
-                _authState.value = AuthState.Error(result.errorMessage)
-                _isLoginSuccessful.value = false
-            }
-        }
+        _authState.value = AuthState.Error("Email sign-in isn't available yet — please continue with Google.")
+        _isLoginSuccessful.value = false
     }
 
     // Function to fetch google details, left for debugging.

@@ -121,6 +121,9 @@ dependencies {
     // Firebase Authentication (for Google Sign-In)
     implementation("com.google.firebase:firebase-auth")
 
+    // Firebase Firestore (app data: members, announcements, complaints)
+    implementation("com.google.firebase:firebase-firestore")
+
     // Google Sign-In SDK
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("androidx.credentials:credentials:1.3.0")

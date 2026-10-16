@@ -17,11 +17,13 @@ class GetGoogleIdUseCase @Inject constructor() {
         context: Activity
     ) : GoogleProviderUser {
 
-        // Build the Google ID token option
+        // Build the Google ID token option.
+        // This must be the Firebase project's WEB (server) OAuth client id —
+        // found in google-services.json under oauth_client with client_type: 3.
         val googleIdOption = GetGoogleIdOption.Builder()
             .setAutoSelectEnabled(false)
             .setFilterByAuthorizedAccounts(false)
-            .setServerClientId("532056230783-tqdvcsfp3f5liro17mriddd1k94jiqjq.apps.googleusercontent.com")
+            .setServerClientId("223711631150-f0hmpq86p1t5fsg39l559o9oi51n2648.apps.googleusercontent.com")
             .build()
 
         // Create the credential request
@@ -37,6 +39,7 @@ class GetGoogleIdUseCase @Inject constructor() {
             GoogleIdTokenCredential.createFrom(result.credential.data)
 
         val googleProviderUser = GoogleProviderUser(
+            idToken = tokenCredential.idToken,
             oauthGoogle = extractGoogleUserId(tokenCredential.idToken),
             fullName = tokenCredential.displayName,
             photoUrl = tokenCredential.profilePictureUri.toString(),

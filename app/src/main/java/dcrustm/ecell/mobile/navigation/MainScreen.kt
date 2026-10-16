@@ -1,13 +1,9 @@
 package dcrustm.ecell.mobile.navigation
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -18,49 +14,50 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import dcrustm.ecell.mobile.R
-import dcrustm.ecell.mobile.ui.admin.AdminScreen
-import dcrustm.ecell.mobile.ui.gallery.GalleryScreen
+import dcrustm.ecell.mobile.domain.model.ROLE
+import dcrustm.ecell.mobile.ui.complaint.ComplaintScreen
+import dcrustm.ecell.mobile.ui.complaint.ComplaintInboxScreen
+import dcrustm.ecell.mobile.ui.coordinator.ManageMembersScreen
+import dcrustm.ecell.mobile.ui.directory.DirectoryScreen
+import dcrustm.ecell.mobile.ui.home.HomeScreen
+import dcrustm.ecell.mobile.ui.home.InitialsAvatar
+import dcrustm.ecell.mobile.ui.home.PostAnnouncementScreen
 
+private const val ROUTE_POST_ANNOUNCEMENT = "post_announcement"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(rootNavController: NavHostController) {
+fun MainScreen(
+    rootNavController: NavHostController,
+    viewModel: MainViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
-    // Observe the current back stack entry to change the top app bar title.
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route ?: Screen.Dashboard.route
+    val currentUser by viewModel.currentUser.collectAsState()
+    val role = currentUser?.role ?: ROLE.PENDING
+    val screens = screensForRole(role)
 
-    // Determine the current active screen.
-    val currentScreen = when (currentRoute) {
-        Screen.Dashboard.route -> Screen.Dashboard
-        Screen.Blogs.route -> Screen.Blogs
-        Screen.Gallery.route -> Screen.Gallery
-        Screen.Admin.route -> Screen.Admin
-        else -> Screen.Dashboard
+    if (screens.isEmpty()) {
+        PendingApprovalScreen(onSignOut = { viewModel.signOut() })
+        return
     }
-    // List of screens for the bottom navigation.
-    val screens = listOf(
-        Screen.Dashboard,
-        Screen.Blogs,
-        Screen.Gallery,
-        Screen.Admin
-    )
+
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route ?: Screen.Home.route
+    val currentScreen = screens.firstOrNull { it.route == currentRoute } ?: screens.first()
 
     Scaffold(
         topBar = {
@@ -72,27 +69,15 @@ fun MainScreen(rootNavController: NavHostController) {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        rootNavController.navigate(RootScreen.Profile.route)
-                    }
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.profile),
-                            contentDescription = "Profile image",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                        )
+                    IconButton(onClick = { rootNavController.navigate(RootScreen.Profile.route) }) {
+                        Box(contentAlignment = Alignment.Center) {
+                            InitialsAvatar(initials = currentUser?.initials ?: "?", size = 34)
+                        }
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        rootNavController.navigate(RootScreen.Info.route)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Info,
-                            contentDescription = "Info icon button"
-                        )
+                    IconButton(onClick = { rootNavController.navigate(RootScreen.Info.route) }) {
+                        Icon(Icons.Outlined.Info, contentDescription = "About")
                     }
                 },
                 modifier = Modifier.statusBarsPadding()
@@ -119,44 +104,41 @@ fun MainScreen(rootNavController: NavHostController) {
                         icon = {
                             Icon(
                                 imageVector = if (selected) screen.filledIcon else screen.outlinedIcon,
-                                contentDescription = screen.title,
-                                tint = Color(0xFF3E4246)
+                                contentDescription = screen.title
                             )
                         },
-                        // Show only icons in the bottom nav, as the top app bar displays the title.
                         alwaysShowLabel = false
                     )
                 }
             }
-        },
-        content = { innerPadding ->
-            // Display content for the current selected screen.
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Dashboard.route,
-                modifier = Modifier.padding(innerPadding)
-            ) {
-                composable(Screen.Dashboard.route) { DashboardScreen() }
-                composable(Screen.Blogs.route) { BlogsScreen() }
-                composable(Screen.Gallery.route) { GalleryScreen() }
-                composable(Screen.Admin.route) { AdminScreen() }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Home.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(Screen.Home.route) {
+                HomeScreen(onPostClick = { navController.navigate(ROUTE_POST_ANNOUNCEMENT) })
+            }
+            composable(Screen.Directory.route) {
+                DirectoryScreen()
+            }
+            composable(Screen.MyCommittee.route) {
+                ManageMembersScreen()
+            }
+            composable(Screen.Complaints.route) {
+                ComplaintScreen()
+            }
+            composable(Screen.Members.route) {
+                ManageMembersScreen()
+            }
+            composable(Screen.Inbox.route) {
+                ComplaintInboxScreen()
+            }
+            composable(ROUTE_POST_ANNOUNCEMENT) {
+                PostAnnouncementScreen(onBack = { navController.popBackStack() })
             }
         }
-    )
-}
-
-// Dummy placeholder screens for a time while.
-
-@Composable
-fun DashboardScreen() {
-    Surface(modifier = Modifier.padding(16.dp)) {
-        Text(text = "Dashboard Content", style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
-fun BlogsScreen() {
-    Surface(modifier = Modifier.padding(16.dp)) {
-        Text(text = "Blogs Content", style = MaterialTheme.typography.bodyLarge)
     }
 }
