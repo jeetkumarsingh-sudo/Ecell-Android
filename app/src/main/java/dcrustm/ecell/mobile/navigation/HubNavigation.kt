@@ -7,12 +7,16 @@ import androidx.navigation.compose.navigation
 import dcrustm.ecell.mobile.ui.hub.HubScreen
 import dcrustm.ecell.mobile.ui.polls.CreatePollScreen
 import dcrustm.ecell.mobile.ui.polls.PollsScreen
+import dcrustm.ecell.mobile.ui.tasks.CreateTaskScreen
+import dcrustm.ecell.mobile.ui.tasks.TasksScreen
 
 /** Routes nested under the Hub tab. The graph itself is registered under [Screen.Hub]'s route. */
 object HubRoutes {
     const val HOME = "hub_home"
     const val POLLS = "polls"
     const val CREATE_POLL = "polls/create"
+    const val TASKS = "tasks"
+    const val CREATE_TASK = "tasks/create"
 }
 
 /**
@@ -32,6 +36,15 @@ fun NavGraphBuilder.hubGraph(navController: NavHostController) {
         }
         composable(HubRoutes.CREATE_POLL) {
             CreatePollScreen(onBack = { navController.popBackStack() })
+        }
+        composable(HubRoutes.TASKS) {
+            TasksScreen(
+                onBack = { navController.popBackStack() },
+                onCreateTask = { navController.navigate(HubRoutes.CREATE_TASK) }
+            )
+        }
+        composable(HubRoutes.CREATE_TASK) {
+            CreateTaskScreen(onBack = { navController.popBackStack() })
         }
     }
 }

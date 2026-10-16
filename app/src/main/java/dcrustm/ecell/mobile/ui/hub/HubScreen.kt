@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.HowToVote
+import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,17 +52,36 @@ private data class HubFeature(
 )
 
 private val hubFeatures = listOf(
-    HubFeature(HubRoutes.POLLS, "Polls", "Vote on team decisions", Icons.Outlined.HowToVote)
+    HubFeature(HubRoutes.POLLS, "Polls", "Vote on team decisions", Icons.Outlined.HowToVote),
+    HubFeature(HubRoutes.TASKS, "Tasks", "Your committee's to-do board", Icons.Outlined.TaskAlt)
 )
 
 private data class HubAction(val label: String, val route: String, val icon: ImageVector)
 
 private fun HubSummary.badgeFor(route: String): Int = when (route) {
     HubRoutes.POLLS -> pollsAwaitingVote
+    HubRoutes.TASKS -> myOpenTasks
     else -> 0
 }
 
 private fun HubSummary.actions(): List<HubAction> = buildList {
+    if (overdueTasks > 0) {
+        add(
+            HubAction(
+                "$overdueTasks overdue task${if (overdueTasks != 1) "s" else ""}",
+                HubRoutes.TASKS,
+                Icons.Outlined.TaskAlt
+            )
+        )
+    } else if (myOpenTasks > 0) {
+        add(
+            HubAction(
+                "$myOpenTasks open task${if (myOpenTasks != 1) "s" else ""} assigned to you",
+                HubRoutes.TASKS,
+                Icons.Outlined.TaskAlt
+            )
+        )
+    }
     if (pollsAwaitingVote > 0) {
         add(
             HubAction(

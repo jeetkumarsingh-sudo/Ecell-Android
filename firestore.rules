@@ -139,5 +139,34 @@ service cloud.firestore {
       allow delete: if isCoordinator()
                     || (isSignedIn() && pollData(resource.data.pollId).createdByUid == myUid());
     }
+
+    // ---------------------------------------------------------------- Tasks
+
+    // tasks/{id} — `committee` is always the assignee's committee, so a head can run
+    // their committee's board. Members only see their own tasks — except finished
+    // ones, which every approved member can count for the leaderboard.
+    match /tasks/{taskId} {
+      allow read: if isCoordinator()
+                  || (isHead() && resource.data.committee == myCommittee())
+                  || (isSignedIn() && resource.data.assigneeUid == myUid())
+                  || (isApprovedUser() && resource.data.status == 'DONE');
+
+      allow create: if request.resource.data.assignedByUid == myUid()
+                    && userExists(request.resource.data.assigneeUid)
+                    && request.resource.data.committee == userData(request.resource.data.assigneeUid).committee
+                    && (isCoordinator()
+                        || (isHead() && request.resource.data.committee == myCommittee()));
+
+      // Managers can edit anything (but a head can't move a task out of their committee);
+      // the assignee can only move it between statuses.
+      allow update: if isCoordinator()
+                    || (isHead() && resource.data.committee == myCommittee()
+                        && request.resource.data.committee == myCommittee())
+                    || (isSignedIn() && resource.data.assigneeUid == myUid()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt']));
+
+      allow delete: if isCoordinator()
+                    || (isHead() && resource.data.committee == myCommittee());
+    }
   }
 }

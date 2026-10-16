@@ -2,8 +2,11 @@ package dcrustm.ecell.mobile.data.firebase
 
 import com.google.firebase.firestore.DocumentSnapshot
 import dcrustm.ecell.mobile.domain.model.Committee
+import dcrustm.ecell.mobile.domain.model.CommitteeTask
 import dcrustm.ecell.mobile.domain.model.Poll
 import dcrustm.ecell.mobile.domain.model.PollVote
+import dcrustm.ecell.mobile.domain.model.TaskPriority
+import dcrustm.ecell.mobile.domain.model.TaskStatus
 
 private inline fun <reified T : Enum<T>> enumOrDefault(name: String?, default: T): T =
     try {
@@ -60,5 +63,41 @@ fun DocumentSnapshot.toPollVote(): PollVote? {
         voterUid = getString("voterUid") ?: "",
         optionIndex = (getLong("optionIndex") ?: 0L).toInt(),
         votedAt = getLong("votedAt") ?: 0L
+    )
+}
+
+// ---- Tasks ----
+
+fun CommitteeTask.toFirestoreMap(): Map<String, Any?> = mapOf(
+    "title" to title,
+    "description" to description,
+    "committee" to committee.name,
+    "assigneeUid" to assigneeUid,
+    "assigneeName" to assigneeName,
+    "assignedByUid" to assignedByUid,
+    "assignedByName" to assignedByName,
+    "status" to status.name,
+    "priority" to priority.name,
+    "dueAt" to dueAt,
+    "createdAt" to createdAt,
+    "completedAt" to completedAt
+)
+
+fun DocumentSnapshot.toCommitteeTask(): CommitteeTask? {
+    if (!exists()) return null
+    return CommitteeTask(
+        id = id,
+        title = getString("title") ?: "",
+        description = getString("description") ?: "",
+        committee = enumOrDefault(getString("committee"), Committee.NONE),
+        assigneeUid = getString("assigneeUid") ?: "",
+        assigneeName = getString("assigneeName") ?: "",
+        assignedByUid = getString("assignedByUid") ?: "",
+        assignedByName = getString("assignedByName") ?: "",
+        status = enumOrDefault(getString("status"), TaskStatus.TODO),
+        priority = enumOrDefault(getString("priority"), TaskPriority.MEDIUM),
+        dueAt = getLong("dueAt") ?: 0L,
+        createdAt = getLong("createdAt") ?: 0L,
+        completedAt = getLong("completedAt") ?: 0L
     )
 }

@@ -71,6 +71,15 @@ fun localEndOfDayFromUtcDate(utcDateMillis: Long): Long {
     }.timeInMillis
 }
 
+/** Today's local calendar date expressed the way DatePicker does: as UTC midnight of that date. */
+fun todayAsUtcDateMillis(): Long {
+    val local = Calendar.getInstance()
+    return Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(local.get(Calendar.YEAR), local.get(Calendar.MONTH), local.get(Calendar.DAY_OF_MONTH))
+    }.timeInMillis
+}
+
 private fun startOfDay(millis: Long): Long = Calendar.getInstance().apply {
     timeInMillis = millis
     set(Calendar.HOUR_OF_DAY, 0)

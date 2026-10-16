@@ -39,6 +39,7 @@ copy from the Firebase console for project `ecell-dcrust`.
 - `complaints/{id}` — title, body, filerUid, filerName, filerCommittee, status, response, createdAt
 - `polls/{id}` — question, options (2–6), createdByUid, createdByName, committee (`null` = org-wide), createdAt, closesAt (`0` = no deadline), isClosed
 - `pollVotes/{pollId}_{uid}` — pollId, voterUid, optionIndex, votedAt (the id pins one vote per member per poll)
+- `tasks/{id}` — title, description, committee (the assignee's), assigneeUid, assigneeName, assignedByUid, assignedByName, status (`TODO`/`IN_PROGRESS`/`DONE`), priority, dueAt (`0` = none), createdAt, completedAt
 
 ### Known trade-off
 

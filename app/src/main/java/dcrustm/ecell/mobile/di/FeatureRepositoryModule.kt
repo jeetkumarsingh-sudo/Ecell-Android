@@ -5,7 +5,9 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dcrustm.ecell.mobile.data.repository.FirestorePollRepository
+import dcrustm.ecell.mobile.data.repository.FirestoreTaskRepository
 import dcrustm.ecell.mobile.domain.repository.PollRepository
+import dcrustm.ecell.mobile.domain.repository.TaskRepository
 import javax.inject.Singleton
 
 /** Repositories for the Hub features (polls, tasks, attendance, resources, leaderboard). */
@@ -16,5 +18,9 @@ abstract class FeatureRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPollRepository(impl: FirestorePollRepository): PollRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTaskRepository(impl: FirestoreTaskRepository): TaskRepository
 
 }
