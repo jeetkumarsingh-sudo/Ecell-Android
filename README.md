@@ -46,7 +46,11 @@ copy from the Firebase console for project `ecell-dcrust`.
 - `checkins/{meetingId}_{uid}` — meetingId, uid, code, at (write-only proof the rules compare with `meetingCodes`, so the code never sits in a document members can read)
 - `resources/{id}` — title, description, url, type (`DOC`/`SLIDES`/`SHEET`/`PDF`/`VIDEO`/`DESIGN`/`LINK`), committee (`null` = everyone), addedByUid, addedByName, createdAt
 
-### Known trade-off
+Leaderboard points are not stored anywhere — they're counted on demand with
+Firestore `count()` aggregations over `attendance`, finished `tasks` and
+`pollVotes` (three aggregation reads per member, cached in memory for 5 minutes).
+
+### Known trade-offs
 
 `firestore.rules` restricts reads mostly at the document level, not per field:
 any *approved* member can read another approved member's full profile
@@ -56,9 +60,41 @@ UI shows them. Splitting `users/{uid}` into a public profile doc plus a
 phone/email more tightly (self, coordinator, or committee head of the same
 committee only) if that's needed later.
 
+The Hub features make similar document-level choices:
+
+- **Poll votes aren't secret at the data level.** The app only shows totals, but
+  `pollVotes` documents carry the voter's uid and are readable by approved members
+  (needed for live results). Anonymous polls would need a Cloud Function to tally.
+- **Finished tasks are readable by every approved member**, so the leaderboard
+  can count them. Open tasks stay private to the assignee, their head and the
+  coordinator.
+- **Attendance check-in codes** are only as strong as a 4-digit code read off
+  the host's screen: they stop casual remote check-ins, not someone in the
+  room texting the code. Hosts can rotate the code or close check-in at any time.
+
+### Testing the security rules
+
+`firestore-tests/` runs the rules against the Firestore emulator (needs Node 18+
+and Java 11+):
+
+```
+cd firestore-tests
+npm install
+npm test
+```
+
 ---
 
 ## Features
+
+### Hub (polls, tasks, attendance, resources, leaderboard)
+- **Polls:** the coordinator polls everyone or a committee, heads poll their own committee. Live result bars, change your vote while it's open, optional deadline.
+- **Task board:** heads assign tasks with priority and due date; members move them To do → In progress → Done. Overdue work is flagged on the Hub.
+- **Attendance:** hosts start a meeting and show a 4-digit code; members check in from their phone. Hosts can mark people present by hand. Everyone sees their attendance rate and history.
+- **Resource library:** share docs, decks, sheets, videos and design links with everyone or your committee; search and filter by type.
+- **Leaderboard & badges:** points for meetings attended, tasks finished and polls voted on; rankings overall or per committee, and badges to unlock.
+- **Profiles & directory:** members edit branch, year, skills and links; the directory searches by skill and filters to leads.
+
 
 ### Market News Dashboard
 - **Curated Content:** Displays the latest market news and trends.
