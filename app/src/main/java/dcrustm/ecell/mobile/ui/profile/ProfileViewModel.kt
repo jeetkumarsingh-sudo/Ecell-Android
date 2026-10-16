@@ -3,31 +3,34 @@ package dcrustm.ecell.mobile.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dcrustm.ecell.mobile.data.local.profile.ProfileEntity
-import dcrustm.ecell.mobile.domain.dummy.ProfileRepository
+import dcrustm.ecell.mobile.domain.model.Member
+import dcrustm.ecell.mobile.domain.repository.MemberRepository
+import dcrustm.ecell.mobile.session.UserSessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val repository: ProfileRepository
+    private val sessionManager: UserSessionManager,
+    private val memberRepository: MemberRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ProfileUiState())
-    val uiState = _uiState.asStateFlow()
+    val currentUser: StateFlow<Member?> = sessionManager.currentUser
 
-    init {
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
+    fun updateProfile(phone: String, bio: String) {
+        val uid = sessionManager.currentUser.value?.uid ?: return
+        _isSaving.value = true
         viewModelScope.launch {
-            val profile = repository.getLocalProfile()
-            _uiState.value = ProfileUiState(profile = profile, isLoading = false)
+            runCatching { memberRepository.updateOwnProfile(uid, phone, bio) }
+            _isSaving.value = false
         }
     }
-}
 
-data class ProfileUiState(
-    val profile: ProfileEntity? = null,
-    val isLoading: Boolean = true
-)
+    fun signOut() = sessionManager.signOut()
+}

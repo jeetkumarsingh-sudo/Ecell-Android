@@ -8,10 +8,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dcrustm.ecell.mobile.ui.about.AboutUsScreen
+import dcrustm.ecell.mobile.ui.directory.MemberDetailScreen
 import dcrustm.ecell.mobile.ui.profile.ProfileScreen
 
 @Composable
@@ -74,6 +77,25 @@ fun RootApp(
             }
         ) {
             AboutUsScreen(onDismiss = { rootNavController.popBackStack() })
+        }
+
+        composable(
+            route = RootScreen.MemberDetail.route,
+            arguments = listOf(navArgument("uid") { type = NavType.StringType }),
+            enterTransition = {
+                slideInVertically(initialOffsetY = { it }, animationSpec = tween(300))
+            },
+            exitTransition = {
+                slideOutVertically(targetOffsetY = { it }, animationSpec = tween(150))
+            },
+            popEnterTransition = {
+                slideInVertically(initialOffsetY = { it }, animationSpec = tween(300))
+            },
+            popExitTransition = {
+                slideOutVertically(targetOffsetY = { it }, animationSpec = tween(150))
+            }
+        ) {
+            MemberDetailScreen(onBack = { rootNavController.popBackStack() })
         }
     }
 }

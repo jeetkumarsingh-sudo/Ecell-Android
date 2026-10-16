@@ -122,16 +122,28 @@ fun MainScreen(
                 HomeScreen(onPostClick = { navController.navigate(ROUTE_POST_ANNOUNCEMENT) })
             }
             composable(Screen.Directory.route) {
-                DirectoryScreen()
+                DirectoryScreen(
+                    onMemberClick = { uid ->
+                        rootNavController.navigate(RootScreen.MemberDetail.createRoute(uid))
+                    }
+                )
             }
             composable(Screen.MyCommittee.route) {
-                ManageMembersScreen()
+                ManageMembersScreen(
+                    onMemberClick = { uid ->
+                        rootNavController.navigate(RootScreen.MemberDetail.createRoute(uid))
+                    }
+                )
             }
             composable(Screen.Complaints.route) {
                 ComplaintScreen()
             }
             composable(Screen.Members.route) {
-                ManageMembersScreen()
+                ManageMembersScreen(
+                    onMemberClick = { uid ->
+                        rootNavController.navigate(RootScreen.MemberDetail.createRoute(uid))
+                    }
+                )
             }
             composable(Screen.Inbox.route) {
                 ComplaintInboxScreen()

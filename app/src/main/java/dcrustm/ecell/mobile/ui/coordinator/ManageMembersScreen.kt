@@ -40,16 +40,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dcrustm.ecell.mobile.domain.model.ROLE
 import dcrustm.ecell.mobile.ui.directory.MemberRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManageMembersScreen(viewModel: ManageMembersViewModel = hiltViewModel()) {
+fun ManageMembersScreen(
+    onMemberClick: (String) -> Unit = {},
+    viewModel: ManageMembersViewModel = hiltViewModel()
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var query by remember { mutableStateOf("") }
 
+    val currentUser by viewModel.currentUser.collectAsState()
     val allMembers by viewModel.allMembers.collectAsState()
     val pendingMembers by viewModel.pendingMembers.collectAsState()
+    val canApprove = viewModel.canApprove
 
     val filteredMembers = allMembers.filter { m ->
         query.isBlank() ||
@@ -58,10 +64,13 @@ fun ManageMembersScreen(viewModel: ManageMembersViewModel = hiltViewModel()) {
             m.branch.contains(query, ignoreCase = true)
     }
 
+    val title = if (currentUser?.role == ROLE.COMMITTEE_HEAD) "My committee" else "Manage members"
+    val activeTab = if (canApprove) selectedTab else 0
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Manage members", style = MaterialTheme.typography.titleMedium) },
+                title = { Text(title, style = MaterialTheme.typography.titleMedium) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -69,27 +78,29 @@ fun ManageMembersScreen(viewModel: ManageMembersViewModel = hiltViewModel()) {
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 },
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("All members")
-                            Spacer(Modifier.width(4.dp))
-                            CountBadge(allMembers.size)
-                        }
-                    })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 },
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Pending")
-                            Spacer(Modifier.width(4.dp))
-                            if (pendingMembers.isNotEmpty())
-                                CountBadge(pendingMembers.size, urgent = true)
-                        }
-                    })
+            if (canApprove) {
+                TabRow(selectedTabIndex = selectedTab) {
+                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("All members")
+                                Spacer(Modifier.width(4.dp))
+                                CountBadge(allMembers.size)
+                            }
+                        })
+                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Pending")
+                                Spacer(Modifier.width(4.dp))
+                                if (pendingMembers.isNotEmpty())
+                                    CountBadge(pendingMembers.size, urgent = true)
+                            }
+                        })
+                }
             }
 
-            when (selectedTab) {
+            when (activeTab) {
                 0 -> {
                     OutlinedTextField(
                         value = query,
@@ -118,7 +129,7 @@ fun ManageMembersScreen(viewModel: ManageMembersViewModel = hiltViewModel()) {
                                 MemberRow(
                                     member = member,
                                     showContact = true,
-                                    onClick = {}
+                                    onClick = { onMemberClick(member.uid) }
                                 )
                             }
                         }
