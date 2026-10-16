@@ -2,12 +2,14 @@ package dcrustm.ecell.mobile.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.outlined.Campaign
+import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Feedback
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Inbox
@@ -56,6 +58,12 @@ sealed class Screen(
         Icons.Filled.Inbox, Icons.Outlined.Inbox,
         visibleTo = setOf(ROLE.COORDINATOR)
     )
+
+    /** Polls, tasks, attendance, resources and the leaderboard — see HubNavigation.kt. */
+    object Hub : Screen(
+        "hub", "Hub",
+        Icons.Filled.Dashboard, Icons.Outlined.Dashboard
+    )
 }
 
 fun screensForRole(role: ROLE): List<Screen> = listOf(
@@ -64,5 +72,6 @@ fun screensForRole(role: ROLE): List<Screen> = listOf(
     Screen.MyCommittee,
     Screen.Complaints,
     Screen.Members,
-    Screen.Inbox
+    Screen.Inbox,
+    Screen.Hub
 ).filter { role in it.visibleTo }

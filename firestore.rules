@@ -35,6 +35,10 @@ service cloud.firestore {
       return myRole() == 'COMMITTEE_HEAD';
     }
 
+    function myCommittee() {
+      return userData(myUid()).committee;
+    }
+
     // users/{uid} — member profile.
     // NOTE: this is a single document per member, readable by any approved member.
     // Phone/email are therefore visible to the whole approved membership (not just
@@ -86,6 +90,54 @@ service cloud.firestore {
       allow update: if isCoordinator();
 
       allow delete: if isCoordinator();
+    }
+
+    // ---------------------------------------------------------------- Polls
+
+    function pollData(pollId) {
+      return get(/databases/$(database)/documents/polls/$(pollId)).data;
+    }
+
+    function pollAcceptsVotesFromMe(pollId) {
+      return pollData(pollId).isClosed == false
+          && (pollData(pollId).closesAt == 0 || request.time.toMillis() < pollData(pollId).closesAt)
+          && (pollData(pollId).committee == null
+              || pollData(pollId).committee == myCommittee()
+              || isCoordinator());
+    }
+
+    // polls/{id} — coordinator can poll anyone; a head only their own committee.
+    match /polls/{pollId} {
+      allow read: if isApprovedUser();
+
+      allow create: if request.resource.data.createdByUid == myUid()
+                    && request.resource.data.options is list
+                    && request.resource.data.options.size() >= 2
+                    && request.resource.data.options.size() <= 6
+                    && request.resource.data.isClosed == false
+                    && (isCoordinator()
+                        || (isHead() && request.resource.data.committee == myCommittee()));
+
+      allow update, delete: if isCoordinator()
+                    || (isHead() && resource.data.createdByUid == myUid());
+    }
+
+    // pollVotes/{pollId}_{uid} — the document id pins one vote per member per poll.
+    // Re-voting overwrites it while the poll is still open.
+    match /pollVotes/{voteId} {
+      allow read: if isApprovedUser();
+
+      allow create, update: if isApprovedUser()
+                    && request.resource.data.voterUid == myUid()
+                    && voteId == request.resource.data.pollId + '_' + myUid()
+                    && pollAcceptsVotesFromMe(request.resource.data.pollId)
+                    && request.resource.data.optionIndex is int
+                    && request.resource.data.optionIndex >= 0
+                    && request.resource.data.optionIndex < pollData(request.resource.data.pollId).options.size();
+
+      // Cleaning up when a poll is deleted.
+      allow delete: if isCoordinator()
+                    || (isSignedIn() && pollData(resource.data.pollId).createdByUid == myUid());
     }
   }
 }
