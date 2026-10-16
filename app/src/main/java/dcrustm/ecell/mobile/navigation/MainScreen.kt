@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -56,8 +57,10 @@ fun MainScreen(
     }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route ?: Screen.Home.route
-    val currentScreen = screens.firstOrNull { it.route == currentRoute } ?: screens.first()
+    val currentDestination = currentBackStackEntry?.destination
+    // Match on the whole hierarchy so a tab stays selected inside its nested graph (e.g. Hub → Polls).
+    fun isInTab(screen: Screen) = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+    val currentScreen = screens.firstOrNull { isInTab(it) } ?: screens.first()
 
     Scaffold(
         topBar = {
@@ -89,16 +92,21 @@ fun MainScreen(
                 modifier = Modifier.navigationBarsPadding()
             ) {
                 screens.forEach { screen ->
-                    val selected = currentRoute == screen.route
+                    val selected = isInTab(screen)
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                            if (selected && screen == Screen.Hub) {
+                                // Re-tapping Hub from inside a feature goes back to the Hub grid.
+                                navController.popBackStack(HubRoutes.HOME, inclusive = false)
+                            } else {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
                         },
                         icon = {
@@ -151,6 +159,10 @@ fun MainScreen(
             composable(ROUTE_POST_ANNOUNCEMENT) {
                 PostAnnouncementScreen(onBack = { navController.popBackStack() })
             }
+            hubGraph(
+                navController = navController,
+                onMemberClick = { uid -> rootNavController.navigate(RootScreen.MemberDetail.createRoute(uid)) }
+            )
         }
     }
 }

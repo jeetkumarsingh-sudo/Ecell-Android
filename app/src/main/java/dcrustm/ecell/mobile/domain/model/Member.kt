@@ -12,8 +12,16 @@ data class Member(
     val bio: String = "",
     val profilePhotoUrl: String = "",
     val joinedAt: Long = 0L,
-    val isApproved: Boolean = false
+    val isApproved: Boolean = false,
+    /** Free-form tags like "Figma", "Public speaking", "Kotlin" — searchable in the directory. */
+    val skills: List<String> = emptyList(),
+    val linkedinUrl: String = "",
+    val githubUrl: String = "",
+    val portfolioUrl: String = ""
 ) {
+    val hasLinks: Boolean get() =
+        linkedinUrl.isNotBlank() || githubUrl.isNotBlank() || portfolioUrl.isNotBlank()
+
     val initials: String get() {
         val parts = name.trim().split(" ")
         return when {

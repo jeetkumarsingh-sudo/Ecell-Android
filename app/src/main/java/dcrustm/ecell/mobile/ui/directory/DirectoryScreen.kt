@@ -48,7 +48,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dcrustm.ecell.mobile.domain.model.Committee
 import dcrustm.ecell.mobile.domain.model.Member
 import dcrustm.ecell.mobile.domain.model.ROLE
-import dcrustm.ecell.mobile.ui.home.InitialsAvatar
+import dcrustm.ecell.mobile.ui.components.MemberAvatar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +61,7 @@ fun DirectoryScreen(
     var query by remember { mutableStateOf("") }
     var selectedCommittee by remember { mutableStateOf<Committee?>(null) }
     var selectedYear by remember { mutableStateOf<Int?>(null) }
+    var leadsOnly by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -77,12 +78,12 @@ fun DirectoryScreen(
                 value = query,
                 onValueChange = { q ->
                     query = q
-                    viewModel.search(q, selectedCommittee, selectedYear)
+                    viewModel.search(q, selectedCommittee, selectedYear, leadsOnly)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search by name or branch…") },
+                placeholder = { Text("Search by name, branch or skill…") },
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -98,13 +99,24 @@ fun DirectoryScreen(
             ) {
                 item {
                     FilterChip(
-                        selected = selectedCommittee == null && selectedYear == null,
+                        selected = selectedCommittee == null && selectedYear == null && !leadsOnly,
                         onClick = {
                             selectedCommittee = null
                             selectedYear = null
-                            viewModel.search(query, null, null)
+                            leadsOnly = false
+                            viewModel.search(query, null, null, false)
                         },
                         label = { Text("All") }
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = leadsOnly,
+                        onClick = {
+                            leadsOnly = !leadsOnly
+                            viewModel.search(query, selectedCommittee, selectedYear, leadsOnly)
+                        },
+                        label = { Text("Leads") }
                     )
                 }
                 items(Committee.entries.filter { it != Committee.NONE }) { committee ->
@@ -112,7 +124,7 @@ fun DirectoryScreen(
                         selected = selectedCommittee == committee,
                         onClick = {
                             selectedCommittee = if (selectedCommittee == committee) null else committee
-                            viewModel.search(query, selectedCommittee, selectedYear)
+                            viewModel.search(query, selectedCommittee, selectedYear, leadsOnly)
                         },
                         label = { Text(committee.shortName) }
                     )
@@ -122,7 +134,7 @@ fun DirectoryScreen(
                         selected = selectedYear == year,
                         onClick = {
                             selectedYear = if (selectedYear == year) null else year
-                            viewModel.search(query, selectedCommittee, selectedYear)
+                            viewModel.search(query, selectedCommittee, selectedYear, leadsOnly)
                         },
                         label = { Text("Year $year") }
                     )
@@ -178,7 +190,7 @@ fun MemberRow(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            InitialsAvatar(initials = member.initials, size = 44)
+            MemberAvatar(member = member, size = 44)
 
             Spacer(Modifier.width(12.dp))
 
@@ -206,6 +218,17 @@ fun MemberRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (member.skills.isNotEmpty()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = member.skills.take(3).joinToString(" · ") +
+                            if (member.skills.size > 3) " +${member.skills.size - 3}" else "",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 if (showContact && member.phone.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
                     Text(

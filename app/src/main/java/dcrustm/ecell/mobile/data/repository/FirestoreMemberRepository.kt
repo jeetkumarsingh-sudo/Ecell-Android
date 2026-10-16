@@ -6,6 +6,7 @@ import dcrustm.ecell.mobile.data.firebase.snapshots
 import dcrustm.ecell.mobile.data.firebase.toMember
 import dcrustm.ecell.mobile.domain.model.Committee
 import dcrustm.ecell.mobile.domain.model.Member
+import dcrustm.ecell.mobile.domain.model.ProfileUpdate
 import dcrustm.ecell.mobile.domain.model.ROLE
 import dcrustm.ecell.mobile.domain.repository.MemberRepository
 import kotlinx.coroutines.flow.Flow
@@ -45,9 +46,18 @@ class FirestoreMemberRepository @Inject constructor(
         usersRef.document(uid).delete().awaitResult()
     }
 
-    override suspend fun updateOwnProfile(uid: String, phone: String, bio: String) {
+    override suspend fun updateOwnProfile(uid: String, update: ProfileUpdate) {
         usersRef.document(uid).update(
-            mapOf("phone" to phone, "bio" to bio)
+            mapOf(
+                "phone" to update.phone,
+                "bio" to update.bio,
+                "year" to update.year,
+                "branch" to update.branch,
+                "skills" to update.skills,
+                "linkedinUrl" to update.linkedinUrl,
+                "githubUrl" to update.githubUrl,
+                "portfolioUrl" to update.portfolioUrl
+            )
         ).awaitResult()
     }
 }

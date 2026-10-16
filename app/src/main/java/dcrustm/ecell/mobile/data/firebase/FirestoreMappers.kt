@@ -27,7 +27,11 @@ fun Member.toFirestoreMap(): Map<String, Any?> = mapOf(
     "bio" to bio,
     "profilePhotoUrl" to profilePhotoUrl,
     "joinedAt" to joinedAt,
-    "isApproved" to isApproved
+    "isApproved" to isApproved,
+    "skills" to skills,
+    "linkedinUrl" to linkedinUrl,
+    "githubUrl" to githubUrl,
+    "portfolioUrl" to portfolioUrl
 )
 
 fun DocumentSnapshot.toMember(): Member? {
@@ -44,7 +48,11 @@ fun DocumentSnapshot.toMember(): Member? {
         bio = getString("bio") ?: "",
         profilePhotoUrl = getString("profilePhotoUrl") ?: "",
         joinedAt = getLong("joinedAt") ?: 0L,
-        isApproved = getBoolean("isApproved") ?: false
+        isApproved = getBoolean("isApproved") ?: false,
+        skills = (get("skills") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+        linkedinUrl = getString("linkedinUrl") ?: "",
+        githubUrl = getString("githubUrl") ?: "",
+        portfolioUrl = getString("portfolioUrl") ?: ""
     )
 }
 

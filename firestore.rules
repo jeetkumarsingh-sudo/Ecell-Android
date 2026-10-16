@@ -35,6 +35,10 @@ service cloud.firestore {
       return myRole() == 'COMMITTEE_HEAD';
     }
 
+    function myCommittee() {
+      return userData(myUid()).committee;
+    }
+
     // users/{uid} — member profile.
     // NOTE: this is a single document per member, readable by any approved member.
     // Phone/email are therefore visible to the whole approved membership (not just
@@ -86,6 +90,190 @@ service cloud.firestore {
       allow update: if isCoordinator();
 
       allow delete: if isCoordinator();
+    }
+
+    // ---------------------------------------------------------------- Polls
+
+    function pollData(pollId) {
+      return get(/databases/$(database)/documents/polls/$(pollId)).data;
+    }
+
+    function pollAcceptsVotesFromMe(pollId) {
+      return pollData(pollId).isClosed == false
+          && (pollData(pollId).closesAt == 0 || request.time.toMillis() < pollData(pollId).closesAt)
+          && (pollData(pollId).committee == null
+              || pollData(pollId).committee == myCommittee()
+              || isCoordinator());
+    }
+
+    // polls/{id} — coordinator can poll anyone; a head only their own committee.
+    match /polls/{pollId} {
+      allow read: if isApprovedUser();
+
+      allow create: if request.resource.data.createdByUid == myUid()
+                    && request.resource.data.options is list
+                    && request.resource.data.options.size() >= 2
+                    && request.resource.data.options.size() <= 6
+                    && request.resource.data.isClosed == false
+                    && (isCoordinator()
+                        || (isHead() && request.resource.data.committee == myCommittee()));
+
+      allow update, delete: if isCoordinator()
+                    || (isHead() && resource.data.createdByUid == myUid());
+    }
+
+    // pollVotes/{pollId}_{uid} — the document id pins one vote per member per poll.
+    // Re-voting overwrites it while the poll is still open.
+    match /pollVotes/{voteId} {
+      allow read: if isApprovedUser();
+
+      allow create, update: if isApprovedUser()
+                    && request.resource.data.voterUid == myUid()
+                    && voteId == request.resource.data.pollId + '_' + myUid()
+                    && pollAcceptsVotesFromMe(request.resource.data.pollId)
+                    && request.resource.data.optionIndex is int
+                    && request.resource.data.optionIndex >= 0
+                    && request.resource.data.optionIndex < pollData(request.resource.data.pollId).options.size();
+
+      // Cleaning up when a poll is deleted.
+      allow delete: if isCoordinator()
+                    || (isSignedIn() && pollData(resource.data.pollId).createdByUid == myUid());
+    }
+
+    // ---------------------------------------------------------------- Tasks
+
+    // tasks/{id} — `committee` is always the assignee's committee, so a head can run
+    // their committee's board. Members only see their own tasks — except finished
+    // ones, which every approved member can count for the leaderboard.
+    match /tasks/{taskId} {
+      allow read: if isCoordinator()
+                  || (isHead() && resource.data.committee == myCommittee())
+                  || (isSignedIn() && resource.data.assigneeUid == myUid())
+                  || (isApprovedUser() && resource.data.status == 'DONE');
+
+      allow create: if request.resource.data.assignedByUid == myUid()
+                    && userExists(request.resource.data.assigneeUid)
+                    && request.resource.data.committee == userData(request.resource.data.assigneeUid).committee
+                    && (isCoordinator()
+                        || (isHead() && request.resource.data.committee == myCommittee()));
+
+      // Managers can edit anything (but a head can't move a task out of their committee);
+      // the assignee can only move it between statuses.
+      allow update: if isCoordinator()
+                    || (isHead() && resource.data.committee == myCommittee()
+                        && request.resource.data.committee == myCommittee())
+                    || (isSignedIn() && resource.data.assigneeUid == myUid()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt']));
+
+      allow delete: if isCoordinator()
+                    || (isHead() && resource.data.committee == myCommittee());
+    }
+
+    // ---------------------------------------------------------------- Attendance
+
+    function meetingData(meetingId) {
+      return get(/databases/$(database)/documents/meetings/$(meetingId)).data;
+    }
+
+    // getAfter() so it also works inside the batch that creates the meeting.
+    function hostsMeeting(meetingId) {
+      return isSignedIn()
+          && getAfter(/databases/$(database)/documents/meetings/$(meetingId)).data.hostUid == myUid();
+    }
+
+    // meetings/{id} — a session hosted by the coordinator or a committee head.
+    match /meetings/{meetingId} {
+      allow read: if isApprovedUser();
+
+      allow create: if request.resource.data.hostUid == myUid()
+                    && request.resource.data.endedAt == 0
+                    && (isCoordinator()
+                        || (isHead() && request.resource.data.committee == myCommittee()));
+
+      allow update: if isCoordinator()
+                    || (isSignedIn() && resource.data.hostUid == myUid()
+                        && request.resource.data.hostUid == myUid()
+                        && request.resource.data.committee == resource.data.committee);
+
+      allow delete: if isCoordinator()
+                    || (isSignedIn() && resource.data.hostUid == myUid());
+    }
+
+    // meetingCodes/{meetingId} — the live check-in code. Only the host (and the
+    // coordinator) can read it, so members have to read it off the host's screen.
+    match /meetingCodes/{meetingId} {
+      allow read: if isCoordinator()
+                  || (isSignedIn() && resource.data.hostUid == myUid());
+
+      allow create: if request.resource.data.hostUid == myUid() && hostsMeeting(meetingId);
+
+      allow update: if (isCoordinator() || (isSignedIn() && resource.data.hostUid == myUid()))
+                    && request.resource.data.hostUid == resource.data.hostUid;
+
+      allow delete: if isCoordinator()
+                    || (isSignedIn() && resource.data.hostUid == myUid());
+    }
+
+    // checkins/{meetingId}_{uid} — the code a member typed. Members can write but never
+    // read these, so the code can't leak through anyone else's attendance. It only goes
+    // through together with the member's attendance record (same batch).
+    match /checkins/{checkinId} {
+      allow create, update: if isApprovedUser()
+                    && request.resource.data.uid == myUid()
+                    && checkinId == request.resource.data.meetingId + '_' + myUid()
+                    && existsAfter(/databases/$(database)/documents/attendance/$(checkinId));
+
+      allow read: if isCoordinator()
+                  || (isSignedIn() && meetingData(resource.data.meetingId).hostUid == myUid());
+    }
+
+    // attendance/{meetingId}_{uid}
+    match /attendance/{recordId} {
+      allow read: if isApprovedUser();
+
+      // Self check-in: the meeting is live, open and meant for me, and the code in my
+      // checkins/ document matches the host's current code.
+      allow create: if isApprovedUser()
+                    && request.resource.data.uid == myUid()
+                    && recordId == request.resource.data.meetingId + '_' + myUid()
+                    && request.resource.data.markedByHost == false
+                    && meetingData(request.resource.data.meetingId).endedAt == 0
+                    && meetingData(request.resource.data.meetingId).checkInOpen == true
+                    && (meetingData(request.resource.data.meetingId).committee == null
+                        || meetingData(request.resource.data.meetingId).committee == myCommittee()
+                        || isCoordinator())
+                    && getAfter(/databases/$(database)/documents/checkins/$(recordId)).data.code
+                       == get(/databases/$(database)/documents/meetingCodes/$(request.resource.data.meetingId)).data.code;
+
+      // The host (or coordinator) marks people present by hand — including the host
+      // themselves when the meeting starts.
+      allow create: if (isCoordinator() || hostsMeeting(request.resource.data.meetingId))
+                    && recordId == request.resource.data.meetingId + '_' + request.resource.data.uid
+                    && request.resource.data.markedByHost == true;
+
+      allow delete: if isCoordinator()
+                    || (isSignedIn() && meetingData(resource.data.meetingId).hostUid == myUid());
+    }
+
+    // ---------------------------------------------------------------- Resources
+
+    // resources/{id} — any approved member shares org-wide or with their own committee;
+    // the coordinator with any committee. Removal: whoever added it, the head of that
+    // committee, or the coordinator.
+    match /resources/{resourceId} {
+      allow read: if isApprovedUser();
+
+      allow create: if isApprovedUser()
+                    && request.resource.data.addedByUid == myUid()
+                    && request.resource.data.url is string
+                    && request.resource.data.url.matches('https?://.+')
+                    && (request.resource.data.committee == null
+                        || request.resource.data.committee == myCommittee()
+                        || isCoordinator());
+
+      allow delete: if isCoordinator()
+                    || (isSignedIn() && resource.data.addedByUid == myUid())
+                    || (isHead() && resource.data.committee == myCommittee());
     }
   }
 }
