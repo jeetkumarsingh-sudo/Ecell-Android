@@ -24,6 +24,7 @@ class AuthViewModel @Inject constructor(
     // Firebase's signInWithCredential creates the account on first use, so a single
     // Google flow covers both sign-up and sign-in.
     fun continueWithGoogle(credentialManager: CredentialManager, context: Activity) = viewModelScope.launch {
+        if (_authState.value == AuthState.Loading) return@launch
         _authState.value = AuthState.Loading
         val result = runCatching { googleLoginUseCase(credentialManager, context) }
             .getOrElse { AuthError(it.message ?: "Google sign-in failed. Please try again.") }

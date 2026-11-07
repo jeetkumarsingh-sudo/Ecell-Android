@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,11 +30,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dcrustm.ecell.mobile.R
+import dcrustm.ecell.mobile.ui.onboarding.welcome.OptimizedResourceImage
 
 @Composable
 fun SignInScreen(
     modifier: Modifier = Modifier,
-    onContinueWithGoogleClick: () -> Unit
+    onContinueWithGoogleClick: () -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
     Column(
         verticalArrangement = Arrangement.Top,
@@ -40,14 +46,17 @@ fun SignInScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
     ) {
-        Image(
-            painter = painterResource(R.drawable.team),
+        OptimizedResourceImage(
+            resourceId = R.drawable.team,
             contentDescription = "The ecell team with the VC",
             modifier = Modifier
-                .align(Alignment.Start)
+                .fillMaxWidth()
+                .height(240.dp)
                 .padding(end = 20.dp)
-                .clip(RoundedCornerShape(bottomEnd = 60.dp))
+                .clip(RoundedCornerShape(bottomEnd = 60.dp)),
+            maxDimensionPx = 900
         )
 
         Image(
@@ -78,6 +87,7 @@ fun SignInScreen(
 
         Button(
             onClick = onContinueWithGoogleClick,
+            enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Black
             ),
@@ -87,21 +97,33 @@ fun SignInScreen(
                 .height(54.dp)
                 .padding(horizontal = 20.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.logo_google),
-                    contentDescription = null,
-                    modifier = Modifier.size(26.dp)
-                )
-                Text(
-                    text = "Continue with Google",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Connecting to Google…")
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.logo_google),
+                            contentDescription = null,
+                            modifier = Modifier.size(26.dp)
+                        )
+                        Text("Continue with Google", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
             }
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)
+            )
         }
     }
 }
